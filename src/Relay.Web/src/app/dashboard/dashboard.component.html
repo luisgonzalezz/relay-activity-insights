@@ -1,0 +1,121 @@
+<main class="dashboard">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Activity insights</p>
+      <h1>{{ result()?.accountName ?? 'Relay activity' }}</h1>
+      @if (result(); as data) {
+        <p class="account-context">Reporting timezone: {{ data.accountTimezone }}</p>
+      } @else {
+        <p class="account-context">Demo account · Summit Auto Group</p>
+      }
+    </div>
+
+    <label class="event-selector">
+      <span>Activity</span>
+      <select
+        aria-label="Activity event type"
+        [value]="eventType()"
+        (change)="onEventTypeChange($event)">
+        <option value="calls">Calls</option>
+        <option value="leads">Leads</option>
+        <option value="appointments">Appointments</option>
+      </select>
+    </label>
+  </header>
+
+  @if (loading()) {
+    <section class="message-card" role="status">Loading activity comparison…</section>
+  } @else if (error()) {
+    <section class="message-card error-card" role="alert">
+      <h2>Couldn’t load activity</h2>
+      <p>{{ error() }}</p>
+    </section>
+  } @else {
+    @if (result(); as data) {
+      <section class="reporting-context" aria-label="Reporting periods">
+        <div>
+          <span class="context-label">Most recent completed week</span>
+          <strong>{{ formatPeriod(data.currentPeriod) }}</strong>
+        </div>
+        <p>Compared with the previous 4 completed weeks</p>
+        <div>
+          <span class="context-label">Baseline period</span>
+          <strong>{{ formatPeriod(data.baselinePeriod) }}</strong>
+        </div>
+      </section>
+
+      <section class="summary-section" aria-labelledby="summary-heading">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Account overview</p>
+            <h2 id="summary-heading">Activity summary</h2>
+          </div>
+          <span class="status-pill" [ngClass]="statusClass(data.summary.status)">
+            {{ statusLabel(data.summary.status) }}
+          </span>
+        </div>
+
+        <div class="summary-grid">
+          <article class="metric-card">
+            <span class="metric-label">Recent activity</span>
+            <strong>{{ data.summary.currentPeriodCount | number }}</strong>
+            <span class="metric-detail">events this week</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">4-week average</span>
+            <strong>{{ data.summary.historicalAverage | number:'1.0-2' }}</strong>
+            <span class="metric-detail">events per week</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">Change vs. baseline</span>
+            <strong>{{ formatPercentage(data.summary.percentageChange) }}</strong>
+            <span class="metric-detail">compared with the 4-week average</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="locations-section" aria-labelledby="locations-heading">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Location comparison</p>
+            <h2 id="locations-heading">How each location is doing</h2>
+          </div>
+          <span class="location-count">{{ data.locations.length }} locations</span>
+        </div>
+
+        @if (sortedLocations().length === 0) {
+          <div class="message-card">No location activity is available for this event type in the comparison periods.</div>
+        } @else {
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Location</th>
+                  <th scope="col">Recent</th>
+                  <th scope="col">4-week avg</th>
+                  <th scope="col">Change</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (location of sortedLocations(); track location.location) {
+                  <tr [class.attention-row]="location.status === 'BelowTypical'">
+                    <th scope="row">{{ location.location }}</th>
+                    <td>{{ location.currentPeriodCount | number }}</td>
+                    <td>{{ location.historicalAverage | number:'1.0-2' }}</td>
+                    <td>{{ formatPercentage(location.percentageChange) }}</td>
+                    <td>
+                      <span class="status-pill" [ngClass]="statusClass(location.status)">
+                        {{ statusLabel(location.status) }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    }
+  }
+</main>
